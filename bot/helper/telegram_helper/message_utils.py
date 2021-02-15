@@ -16,6 +16,15 @@ def sendMessage(text: str, bot, update: Update):
     except Exception as e:
         LOGGER.error(str(e))
 
+def sendGroup(media: list, bot, update: Update):
+    try:
+        return bot.send_media_group(chat_id=update.message.chat.id,
+                                disable_notification=True,
+                                reply_to_message_id=update.message.message_id,
+                                media=media
+                                )
+    except Exception as e:
+        LOGGER.error(str(e))
 
 def editMessage(text: str, message: Message):
     try:
