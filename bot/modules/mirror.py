@@ -91,16 +91,14 @@ class MirrorListener(listeners.MirrorListeners):
                 path = f'{DOWNLOAD_DIR}{self.uid}/{name}'
         else:
             path = f'{DOWNLOAD_DIR}{self.uid}/{name}'
-        up_name = pathlib.PurePath(path).name
-        LOGGER.info(f"Upload Name : {up_name}")
-        drive = gdriveTools.GoogleDriveHelper(up_name, self)
-        if size == 0:
-            size = fs_utils.get_path_size(m_path)
-        upload_status = UploadStatus(drive, size, self)
-        with download_dict_lock:
-            download_dict[self.uid] = upload_status
+            
+        upload_path = ju_file(path,self.bot,self.update)
+        if AUTO_RCLONE:
+            upload_message = rc_upload(upload_path)
+            if upload_message is not None:
+                sendMessage(upload_message, self.bot, self.update)
+            LOGGER.info(upload_message)
         update_all_messages()
-        drive.upload(up_name)
 
     def onDownloadError(self, error):
         error = error.replace('<', ' ')
@@ -135,42 +133,10 @@ class MirrorListener(listeners.MirrorListeners):
         pass
 
     def onUploadComplete(self, link: str):
-        with download_dict_lock:
-            msg = f'<a href="{link}">{download_dict[self.uid].name()}</a> ({download_dict[self.uid].size()})'
-            LOGGER.info(f'Done Uploading {download_dict[self.uid].name()}')
-            if INDEX_URL is not None:
-                share_url = requests.utils.requote_uri(f'{INDEX_URL}/{download_dict[self.uid].name()}')
-                if os.path.isdir(f'{DOWNLOAD_DIR}/{self.uid}/{download_dict[self.uid].name()}'):
-                    share_url += '/'
-                msg += f'\n\n Shareable link: <a href="{share_url}">here</a>'
-            if self.tag is not None:
-                msg += f'\ncc: @{self.tag}'
-            try:
-                fs_utils.clean_download(download_dict[self.uid].path())
-            except FileNotFoundError:
-                pass
-            del download_dict[self.uid]
-            count = len(download_dict)
-        sendMessage(msg, self.bot, self.update)
-        if count == 0:
-            self.clean()
-        else:
-            update_all_messages()
+        pass
 
     def onUploadError(self, error):
-        e_str = error.replace('<', '').replace('>', '')
-        with download_dict_lock:
-            try:
-                fs_utils.clean_download(download_dict[self.uid].path())
-            except FileNotFoundError:
-                pass
-            del download_dict[self.message.message_id]
-            count = len(download_dict)
-        sendMessage(e_str, self.bot, self.update)
-        if count == 0:
-            self.clean()
-        else:
-            update_all_messages()
+        pass
 
 def _mirror(bot, update, isTar=False, extract=False):
     message_args = update.message.text.split(' ')
@@ -184,7 +150,7 @@ def _mirror(bot, update, isTar=False, extract=False):
     if reply_to is not None:
         file = None
         tag = reply_to.from_user.username
-        media_array = [reply_to.document, reply_to.video, reply_to.audio]
+        media_array = [reply_to.document, reply_to.video, reply_to.audio, reply_to.photo]
         for i in media_array:
             if i is not None:
                 file = i
@@ -192,7 +158,9 @@ def _mirror(bot, update, isTar=False, extract=False):
 
         if len(link) == 0:
             if file is not None:
-                if file.mime_type != "application/x-bittorrent":
+                if isinstance(file,list):
+                    link = file[-1].get_file().file_path
+                elif file.mime_type != "application/x-bittorrent":
                     listener = MirrorListener(bot, update, isTar, tag, extract)
                     tg_downloader = TelegramDownloadHelper(listener)
                     tg_downloader.add_download(reply_to, f'{DOWNLOAD_DIR}{listener.uid}/')
@@ -207,7 +175,13 @@ def _mirror(bot, update, isTar=False, extract=False):
     if not bot_utils.is_url(link) and not bot_utils.is_magnet(link):
         sendMessage('No download source provided', bot, update)
         return
-
+    
+    if "pornhub" in link:
+        try:  
+            link=generat_pornhb_url(link)
+        except Exception as e:
+            LOGGER.info(f'{link}: {e}')
+            
     try:
         link = direct_link_generator(link)
     except DirectDownloadLinkException as e:
