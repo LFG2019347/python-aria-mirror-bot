@@ -22,7 +22,7 @@ def clean_dir(update,context):
     else:
         sendMessage("Please enter the file path that you want to delete.",context.bot,update)
         
-    threading.Thread(target=auto_delete_message, args=(context.bot, update.message, reply_message)).start()
+    threading.Thread(target=auto_delete_message, args=(context.bot, update.message)).start()
 
 list_handler = CommandHandler(BotCommands.CleanCommand, clean_dir,filters=CustomFilters.authorized_chat | CustomFilters.authorized_user)
 dispatcher.add_handler(list_handler)
