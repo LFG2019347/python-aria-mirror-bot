@@ -66,7 +66,6 @@ if os.path.exists('authorized_chats.txt'):
             AUTHORIZED_CHATS.add(int(line.split()[0]))
 try:
     BOT_TOKEN = getConfig('BOT_TOKEN')
-    parent_id = getConfig('GDRIVE_FOLDER_ID')
     DOWNLOAD_DIR = getConfig('DOWNLOAD_DIR')
     if DOWNLOAD_DIR[-1] != '/' or DOWNLOAD_DIR[-1] != '\\':
         DOWNLOAD_DIR = DOWNLOAD_DIR + '/'
@@ -76,32 +75,12 @@ try:
     USER_SESSION_STRING = getConfig('USER_SESSION_STRING')
     TELEGRAM_API = getConfig('TELEGRAM_API')
     TELEGRAM_HASH = getConfig('TELEGRAM_HASH')
+    REMOTE_ID = getConfig('REMOTE_ID')
+    REMOTE_PATH = getConfig('REMOTE_PATH')
+    AUTO_RCLONE = False if getConfig('AUTO_RCLONE')=='False' else True
 except KeyError as e:
     LOGGER.error("One or more env variables missing! Exiting now")
     exit(1)
-try:
-    INDEX_URL = getConfig('INDEX_URL')
-    if len(INDEX_URL) == 0:
-        INDEX_URL = None
-except KeyError:
-    INDEX_URL = None
-try:
-    IS_TEAM_DRIVE = getConfig('IS_TEAM_DRIVE')
-    if IS_TEAM_DRIVE.lower() == 'true':
-        IS_TEAM_DRIVE = True
-    else:
-        IS_TEAM_DRIVE = False
-except KeyError:
-    IS_TEAM_DRIVE = False
-
-try:
-    USE_SERVICE_ACCOUNTS = getConfig('USE_SERVICE_ACCOUNTS')
-    if USE_SERVICE_ACCOUNTS.lower() == 'true':
-        USE_SERVICE_ACCOUNTS = True
-    else:
-        USE_SERVICE_ACCOUNTS = False
-except KeyError:
-    USE_SERVICE_ACCOUNTS = False
 
 updater = tg.Updater(token=BOT_TOKEN,use_context=True)
 bot = updater.bot
